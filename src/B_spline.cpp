@@ -479,22 +479,28 @@ int BSpline::FindSpan(double u)
 	{
 		return m_Degree;
 	}
-
-	low = m_Degree;
-	high = m_NumControl;
-	mid = (low + high)/2;
-	while (u < m_KnotData[mid]||u >= m_KnotData[mid+1])
+	for (mid = m_Degree; mid < m_NumControl; ++mid)
 	{
-		if (u < m_KnotData[mid])
+		if (u <= m_KnotData[mid + 1] && u > m_KnotData[mid])
 		{
-			high = mid;
-		} 
-		else
-		{
-			low = mid;
+			break;
 		}
-		mid = (low + high)/2;
 	}
+	//low = m_Degree;
+	//high = m_NumControl;
+	//mid = (low + high)/2;
+	//while (u < m_KnotData[mid]||u >= m_KnotData[mid+1])
+	//{
+	//	if (u < m_KnotData[mid])
+	//	{
+	//		high = mid;
+	//	} 
+	//	else
+	//	{
+	//		low = mid;
+	//	}
+	//	mid = (low + high)/2;
+	//}
 	return mid;
 }
 
@@ -847,7 +853,11 @@ int BSpline::selectControlPoints(double eps)
 {
 	int i,j ;
 	bool flag = false;
-	for (m_NumControl = m_NumInput - m_Degree - 1; m_NumControl > m_Degree; --m_NumControl)
+	if (m_NumInput - m_Degree - 1 < 2)
+	{
+		return -1;
+	}
+	for (m_NumControl = m_NumInput - m_Degree - 1; m_NumControl > m_Degree + 1; --m_NumControl)
 	{
 		m_NumKnot = m_NumControl + m_Degree + 1;
 		m_ControlData = (Vect*)malloc(m_NumControl * sizeof(Vect));
@@ -862,7 +872,7 @@ int BSpline::selectControlPoints(double eps)
 
 			CurvePoint(m_ParamInputData[i], &Point);
 			double error = caculateDistancef(Point, m_InputData[i], 2);
-			if (error > eps)
+			if (isnormal(error)&&error > eps)
 			{
 				flag = true;
 				break;
@@ -877,11 +887,11 @@ int BSpline::selectControlPoints(double eps)
 			break;
 		}
 	}
-	m_NumControl = m_NumControl + 1;
+	m_NumControl = m_NumControl;
 	m_NumKnot = m_NumControl + m_Degree + 1;
 
 
-	return m_NumControl;
+	return 0;
 }
 int BSpline::BSpline_CurveFit(int NumControl, int NumOut, Vect *OutData)
 {
@@ -918,7 +928,12 @@ int BSpline::BSpline_CurveFit(int NumControl, int NumOut, Vect *OutData)
 int BSpline::BSpline_CurveFit(double eps, int NumOut, Vect *OutData)
 {
 	int i;
-	m_NumControl = selectControlPoints(eps);
+	int flag = selectControlPoints(eps);
+	if (flag)
+	{
+		printf("input data is too less!!!");
+		return -1;
+	}
 	m_ControlData = (Vect*)malloc(m_NumControl * sizeof(Vect));
 	m_KnotData = (double*)malloc(m_NumKnot * sizeof(double));
 	CurveFitKnotVector();
@@ -965,7 +980,7 @@ int main()
 		data[i][2] = wz[i];
 	}
 	BSpline *bspline = new BSpline(data, NumInput, dim, 3);
-	bspline->BSpline_CurveFit(eps, NumOut, out);
+	int ret = bspline->BSpline_CurveFit(eps, NumOut, out);
 	bspline->BSpline_CurveFit(NumControl, NumOut, out);
 	bspline->BSpline_CurveInterp(NumOut, out);
 	delete(bspline);
