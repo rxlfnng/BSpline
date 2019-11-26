@@ -434,9 +434,9 @@ double caculateDistancef(double* a, double* b, int size)
 }
 
 
-BSpline::BSpline(Vect* InputData,int NumImput, int Dim, int Degree)
+BSpline::BSpline(Vect* InputData,int NumInput, int Dim, int Degree)
 {
-	m_NumInput = NumImput;
+	m_NumInput = NumInput;
 	m_Dim = Dim;
 	m_Degree = Degree;
 	m_InputData = InputData;
@@ -469,7 +469,7 @@ n=m-p-1
 */
 int BSpline::FindSpan(double u)
 {
-	int low, mid, high;
+	int mid;
 	
 	if (u == m_KnotData[m_NumControl])
 	{
@@ -851,7 +851,7 @@ void BSpline::GlobalCurveFit()
 }
 int BSpline::selectControlPoints(double eps)
 {
-	int i,j ;
+	int i;
 	bool flag = false;
 	if (m_NumInput - m_Degree - 1 < 2)
 	{
@@ -895,7 +895,6 @@ int BSpline::selectControlPoints(double eps)
 }
 int BSpline::BSpline_CurveFit(int NumControl, int NumOut, Vect *OutData)
 {
-	int i;
 	m_NumControl = NumControl;
 	m_NumKnot = m_NumControl + m_Degree + 1;
 	if (m_NumInput <= m_NumKnot)
@@ -927,7 +926,6 @@ int BSpline::BSpline_CurveFit(int NumControl, int NumOut, Vect *OutData)
 
 int BSpline::BSpline_CurveFit(double eps, int NumOut, Vect *OutData)
 {
-	int i;
 	int flag = selectControlPoints(eps);
 	if (flag)
 	{
@@ -956,7 +954,261 @@ int BSpline::BSpline_CurveFit(double eps, int NumOut, Vect *OutData)
 	return 0;
 }
 
+CubicSpline::CubicSpline(Vect* InputData, int NumInput, int Dim, double lambda)
+{
+	int i, j;
+	m_NumInput = NumInput;
+	m_Dim = Dim;
+	m_Lambda = lambda;
+	m_pInputData = (Vect*)malloc(m_NumInput * sizeof(Vect));
+	memcpy(m_pInputData, InputData, m_NumInput * sizeof(Vect));
+	m_pStepData = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double *p = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	Vect* q = (Vect*)malloc(m_NumInput * sizeof(Vect));
+	a = (Vect*)malloc((m_NumInput - 1) * sizeof(Vect));
+	b = (Vect*)malloc((m_NumInput - 1) * sizeof(Vect));
+	c = (Vect*)malloc((m_NumInput - 1) * sizeof(Vect));
+	d = (Vect*)malloc((m_NumInput - 1) * sizeof(Vect));
 
+	SplineParameterization();
+	
+	
+	
+	//m_pStepData[0] = m_pParamInputData[1] - m_pParamInputData[0];//caculateDistancef(m_pInputData[1], m_pInputData[0], dd);
+	//for (i = 1; i < m_NumInput - 1; ++i)
+	//{
+	//	m_pStepData[i] = m_pParamInputData[i + 1] - m_pParamInputData[i]; //caculateDistancef(m_pInputData[i + 1], m_pInputData[i], dd);
+	//	p[i] = 2 * (m_pParamInputData[i + 1] - m_pParamInputData[i - 1]);
+	//	for (j = 0; j < m_Dim; ++j)
+	//	{
+	//		q[i][j] = 3 * (m_pInputData[i + 1][j] - m_pInputData[i][j]) / m_pStepData[i] - 3 * (m_pInputData[i][j] - m_pInputData[i - 1][j]) / m_pStepData[i - 1];
+	//	}
+	//}
+
+	///*Gaussian Elimination*/
+	//for (i = 2; i < m_NumInput - 1; ++i)
+	//{
+	//	p[i] = p[i] - m_pStepData[i - 1] * m_pStepData[i - 1] / p[i - 1];
+	//	for (j = 0; j < m_Dim; ++j)
+	//	{
+	//		q[i][j] = q[i][j] - q[i - 1][j] * m_pStepData[i - 1] / p[i - 1];
+	//	}
+	//}
+	///*Backsubtitution*/
+	//for (j = 0; j < m_Dim; ++j)
+	//{
+	//	b[m_NumInput - 2][j] = q[m_NumInput - 2][j] / p[m_NumInput - 2];
+	//}
+	//for (i = 3; i < m_NumInput; ++i)
+	//{
+	//	for (j = 0; j < m_Dim; ++j)
+	//	{
+	//		b[m_NumInput - i][j] = (q[m_NumInput - i][j] - m_pStepData[m_NumInput - i] * b[m_NumInput - i + 1][j]) / p[m_NumInput - i];
+	//	}
+	//}
+
+	///*spline parameters*/
+	//double ddy = (3.0 * m_pStepData[0]);
+	//for (j = 0; j < m_Dim; ++j)
+	//{
+	//	a[0][j] = b[1][j] / ddy;
+	//	b[0][j] = 0;
+	//	c[0][j] = (m_pInputData[1][j] - m_pInputData[0][j]) / m_pStepData[0] - b[1][j] * m_pStepData[0] / 3;
+	//	d[0][j] = m_pInputData[0][j];
+	//	//b[m_NumInput - 2][j] = 0;
+	//}
+	//printf("[%lf, %lf, %lf, %lf],\n", b[1][0], b[1][1], b[1][2], m_pStepData[0]);
+	//printf("[%lf, %lf, %lf],\n", a[0][0], a[0][1], a[0][2]);
+	//for (i = 1; i < m_NumInput - 1; ++i)
+	//{
+	//	for (j = 0; j < m_Dim; ++j)
+	//	{
+	//		a[i][j] = (b[i + 1][j] - b[i][j]) / (2 * m_pStepData[i]);
+	//		c[i][j] = (m_pInputData[i + 1][j] - m_pInputData[i][j]) / m_pStepData[i] - a[i][j] * m_pStepData[i] * m_pStepData[i] - b[i][j] * m_pStepData[i];//(b[i][j] + b[i - 1][j])*m_pStepData[i - 1] + c[i - 1][j];
+	//		d[i][j] = m_pInputData[i][j];
+	//	}
+	//}
+
+
+	double *r = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double *f = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double *u = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double *v = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double *w = (double*)malloc((m_NumInput - 1) * sizeof(double));
+	double sigma = 1.0;
+	double mu = 2 * (1 - m_Lambda) / (3 * m_Lambda);
+	m_pStepData[0] = m_pParamInputData[1] - m_pParamInputData[0];
+	r[0] = 3 / m_pStepData[0];
+	for (i = 1; i < m_NumInput - 1; ++i)
+	{
+		m_pStepData[i] = m_pParamInputData[i + 1] - m_pParamInputData[i];
+		r[i] = 3 / m_pStepData[i];
+		f[i] = -(r[i - 1] + r[i]);
+		p[i] = 2 * (m_pParamInputData[i + 1] - m_pParamInputData[i - 1]);
+		for (j = 0; j < m_Dim; ++j)
+		{
+			q[i][j] = 3 * (m_pInputData[i + 1][j] - m_pInputData[i][j]) / m_pStepData[i] - 3 * (m_pInputData[i][j] - m_pInputData[i - 1][j]) / m_pStepData[i - 1];
+		}
+	}
+	u[0] = 0.0;
+	v[0] = 0.0;
+	w[0] = 0.0;
+	for (i = 1; i < m_NumInput - 1; ++i)
+	{
+		u[i] = r[i - 1]*r[i - 1]*sigma + f[i]* f[i] *sigma + r[i] * r[i] *sigma;
+		u[i] = mu * u[i] + p[i];
+		v[i] = f[i] * r[i] * sigma + r[i] * f[i + 1] * sigma;
+		v[i] = mu * v[i] + m_pStepData[i];
+		w[i] = mu * r[i] * r[i + 1] * sigma;
+		
+	}
+
+	Quincunx(m_NumInput, u, v, w, q);
+
+	/*spline parameters*/
+	for (j = 0; j < m_Dim; ++j)
+	{
+		d[0][j] = m_pInputData[0][j] - mu * r[0] * q[1][j] * sigma;
+		double dx = m_pInputData[1][j] - mu * (f[1] * q[1][j] + r[1] * q[2][j])*sigma;
+		
+		a[0][j] = q[1][j] / (3.0 * m_pStepData[0]);
+		b[0][j] = 0;
+		c[0][j] = (dx - d[0][j]) / m_pStepData[0] - q[1][j] * m_pStepData[0] / 3;
+		//r[0] = 0;
+	}
+	for (i = 1; i < m_NumInput - 1; ++i)
+	{
+		for (j = 0; j < m_Dim; ++j)
+		{
+			a[i][j] = (q[i + 1][j] - q[i][j]) / (3 * m_pStepData[i]);
+			b[i][j] = q[i][j];
+			c[i][j] = (q[i][j] + q[i - 1][j])*m_pStepData[i - 1] + c[i - 1][j];
+			d[i][j] = r[i - 1] * q[i - 1][j] + f[i] * q[i][j] + r[i]*q[i + 1][j];
+			d[i][j] = m_pInputData[i][j] - mu * d[i][j] * sigma;
+
+		}
+	}
+
+	free(r);
+	free(f);
+	free(u);
+	free(v);
+	free(w);
+	free(p);
+	free(q);
+
+}
+CubicSpline::~CubicSpline()
+{
+	free(m_pParamInputData);
+	free(m_pStepData);
+	free(m_pInputData);
+	free(a);
+	free(b);
+	free(c);
+	free(d);
+}
+void CubicSpline::Quincunx(int n, double* u, double *v, double *w, Vect* q)
+{
+	int i,j;
+	u[0] = 0;
+	/*factorisation*/
+	//u[1] = u[1] - u[0] * v[0] * v[0];
+	v[1] = v[1] / u[1];
+	w[1] = w[1] / u[1];
+	for (i = 2; i < n - 1; ++i)
+	{
+		u[i] = u[i] - u[i - 2] * w[i - 2] * w[i - 2] - u[i - 1] * v[i - 1] * v[i - 1];
+		v[i] = (v[i] - u[i - 1] * v[i - 1] * w[i - 1]) / u[i];
+		w[i] = w[i] / u[i];
+	}
+
+	/*forward substitution*/
+
+	for (i = 2; i < n - 1; ++i)
+	{
+		for (j = 0; j < m_Dim; ++j)
+		{
+			q[i][j] = q[i][j] - v[i - 1] * q[i - 1][j] - w[i - 2] * q[i - 2][j];
+		}
+	}
+
+	for (i = 1; i < n - 1; ++i)
+	{
+		for (j = 0; j < m_Dim; ++j)
+		{
+			q[i][j] = q[i][j] / u[i];
+		}
+	}
+
+	/*back substitution*/
+	for (j = 0; j < m_Dim; ++j)
+	{
+		q[0][j] = 0.0;
+		q[n - 1][j] = 0;
+	}
+	for (i = n - 3; i > 0; --i)
+	{
+		for (j = 0; j < m_Dim; ++j)
+		{
+
+			q[i][j] = q[i][j] - v[i] * q[i + 1][j] - w[i] * q[i + 2][j];
+		}
+	}
+
+}
+
+int CubicSpline::FindSpan(double u)
+{
+	int mid;
+
+	for (mid = 0; mid < m_NumInput - 1; ++mid)
+	{
+		if (u < m_pParamInputData[mid + 1] && u >= m_pParamInputData[mid])
+		{
+			break;
+		}
+	}
+	return mid;
+}
+
+void CubicSpline::CulicSpline_CurveInterp(int NumOut, Vect *OutData)
+{
+	int i, j;
+	double delta = 1.0 / NumOut;
+
+	for (i = 0; i < NumOut; ++i)
+	{
+		double u = i * delta*m_ArcLen;
+		int span = FindSpan(u);
+		double sx = m_pParamInputData[span];
+		double cx = u - sx;
+
+		for (j = 0; j < m_Dim; ++j)
+		{
+			
+			OutData[i][j] = a[span][j] * cx*cx*cx + b[span][j] * cx*cx + c[span][j] * cx + d[span][j];
+		}
+
+	}
+
+
+}
+
+//弦长参数化
+void CubicSpline::SplineParameterization()
+{
+	double dist = 0;
+	m_pParamInputData = (double*)malloc(m_NumInput * sizeof(double));
+	m_pParamInputData[0] = 0;
+	for (int i = 1; i < m_NumInput; ++i)
+	{
+		dist = caculateDistancef(m_pInputData[i], m_pInputData[i - 1], dd);
+		m_pParamInputData[i] = m_pParamInputData[i - 1] + dist;
+	}
+	m_ArcLen = m_pParamInputData[m_NumInput - 1];
+
+}
 int main()
 {
 	//3D
@@ -979,15 +1231,26 @@ int main()
 		data[i][1] = wy[i];
 		data[i][2] = wz[i];
 	}
-	BSpline *bspline = new BSpline(data, NumInput, dim, 3);
-	int ret = bspline->BSpline_CurveFit(eps, NumOut, out);
-	bspline->BSpline_CurveFit(NumControl, NumOut, out);
-	bspline->BSpline_CurveInterp(NumOut, out);
-	delete(bspline);
+	//BSpline *bspline = new BSpline(data, NumInput, dim, 3);
+	//int ret = bspline->BSpline_CurveFit(eps, NumOut, out);
+	//bspline->BSpline_CurveFit(NumControl, NumOut, out);
+	////bspline->BSpline_CurveInterp(NumOut, out);
+	//delete(bspline);
 	
+	CubicSpline* cspline = new CubicSpline(data, NumInput, dim, 0.00001);
+	cspline->CulicSpline_CurveInterp(NumOut, out);
+	for (int i = 0; i < NumOut; ++i)
+	{
+		printf("[%f, %f, %f],\n", (float)(out[i][0]), (float)(out[i][1]), (float)(out[i][2]));
+	}
+
+
+
 	free(data);
 	free(out);
+	getchar();
 	return 1;
+	
 }
 
 

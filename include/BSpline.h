@@ -10,7 +10,7 @@ double caculateDistancef(double* a, double* b, int size);
 class BSpline
 {
 public:
-	BSpline(Vect* InputData, int NumImput, int Dim, int Degree);
+	BSpline(Vect* InputData, int NumInput, int Dim, int Degree);
 	~BSpline();
 	int BSpline_CurveFit(int NumControl, int NumOut, Vect *OutData);
 	int BSpline_CurveFit(double eps, int NumOut, Vect *OutData);//fit 
@@ -46,4 +46,41 @@ private:
 	double *m_ParamInputData;//参数化输入
 	Vect *m_ControlData;//控制点
 	Vect *m_InputData;
+};
+class CubicSpline
+{
+	/*pollock Smoothing with Cubic Splines*/
+	/*Si(x) = ai(x-xi)^3 + bi(x-xi)^2+ci(x-xi)+di*/
+	/*Si' = 3ai(x-xi)^2 + 2bi(x-xi)+ci*/
+	/*Si'' = 6ai(x-xi)+2bi*/
+	/*h(i-1)  = xi - x(i-1)*/
+	/**/
+
+
+
+public:
+	CubicSpline(Vect* InputData, int NumInput, int Dim, double lambda);
+	~CubicSpline();
+	void CulicSpline_CurveInterp(int NumOut, Vect *OutData);
+
+private:
+	int FindSpan(double u);
+	void SplineParameterization();
+	void Quincunx(int n, double* u, double *v, double *w, Vect* q);
+
+	double m_ArcLen;
+	int m_NumInput;
+	int m_NumKnot;
+	int m_Dim;
+	double m_Lambda;
+
+	double *m_pStepData;//节点
+	double *m_pParamInputData;//参数化输入
+	Vect *m_pInputData;
+
+	Vect* a;
+	Vect* b;
+	Vect* c;
+	Vect* d;
+
 };

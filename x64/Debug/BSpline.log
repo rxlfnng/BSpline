@@ -1,7 +1,2 @@
 ﻿  B_spline.cpp
-f:\bspline\src\b_spline.cpp(472): warning C4101: “low”: 未引用的局部变量
-f:\bspline\src\b_spline.cpp(472): warning C4101: “high”: 未引用的局部变量
-f:\bspline\src\b_spline.cpp(854): warning C4101: “j”: 未引用的局部变量
-f:\bspline\src\b_spline.cpp(898): warning C4101: “i”: 未引用的局部变量
-f:\bspline\src\b_spline.cpp(930): warning C4101: “i”: 未引用的局部变量
   BSpline.vcxproj -> F:\BSpline\x64\Debug\BSpline.exe
